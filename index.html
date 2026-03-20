@@ -1,570 +1,344 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>GlowLog — Skincare Tracker</title>
-
-<!-- PWA manifest -->
 <link rel="manifest" href="manifest.json">
-
-<!-- iOS PWA support -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GlowLog">
 <link rel="apple-touch-icon" href="icon-192.png">
-
-<!-- Theme colors -->
 <meta name="theme-color" content="#f5ece6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1e1630" media="(prefers-color-scheme: dark)">
-<meta name="msapplication-TileColor" content="#f5ece6">
-
-<!-- SEO / share -->
 <meta name="description" content="Track your AM & PM skincare routine day by day.">
-
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --rose: #e8c4c4;
-    --rose-dark: #b87a7a;
-    --rose-deep: #7a3f3f;
-    --cream: #fdf8f4;
-    --petal: #f5ece6;
-    --bark: #3d2b1f;
-    --moss: #6b7c5c;
-    --gold: #c9a96e;
-    --mist: #d4cfc9;
-    --sky-am: #d6e8f5;
-    --sky-pm: #2a1f3d;
-    --font-display: 'Cormorant Garamond', serif;
-    --font-body: 'DM Sans', sans-serif;
-    --transition: 0.25s ease;
-    /* Safe area insets for iPhone notch / home bar */
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
+:root {
+  --rose: #e8c4c4;
+  --rose-dark: #b87a7a;
+  --rose-deep: #7a3f3f;
+  --cream: #fdf8f4;
+  --petal: #f5ece6;
+  --bark: #3d2b1f;
+  --moss: #6b7c5c;
+  --gold: #c9a96e;
+  --mist: #d4cfc9;
+  --sky-am: #d6e8f5;
+  --sky-pm: #2a1f3d;
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --t: 0.22s ease;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --tap: 44px;
+}
 
-  body {
-    font-family: var(--font-body);
-    background: var(--cream);
-    color: var(--bark);
-    min-height: 100vh;
-    /* Prevent overscroll bounce showing white behind header */
-    overscroll-behavior: none;
-  }
+html { height: 100%; }
 
-  /* HEADER — accounts for iPhone status bar */
-  .header {
-    background: var(--petal);
-    border-bottom: 1px solid var(--rose);
-    padding: calc(1.5rem + var(--safe-top)) 2rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--bark);
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
 
-  .logo {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--rose-deep);
-    letter-spacing: 0.02em;
-  }
+button, [role="button"], .day-chip, .step-card, .check-circle, .icon-btn, .time-btn, .add-btn {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
 
-  .logo span { color: var(--gold); }
+#app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
-  .date-display {
-    font-size: 0.85rem;
-    color: var(--rose-dark);
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
+/* HEADER */
+.header {
+  flex-shrink: 0;
+  background: var(--petal);
+  border-bottom: 1px solid var(--rose);
+  padding: calc(var(--safe-top) + 10px) calc(var(--safe-right) + 16px) 10px calc(var(--safe-left) + 16px);
+  display: grid;
+  grid-template-columns: var(--tap) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
 
-  /* TIME TOGGLE */
-  .time-toggle-wrap {
-    display: flex;
-    background: white;
-    border: 1px solid var(--rose);
-    border-radius: 50px;
-    overflow: hidden;
-  }
+.back-btn {
+  width: var(--tap); height: var(--tap);
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; cursor: pointer;
+  border-radius: 12px; font-size: 22px; color: var(--rose-deep);
+  transition: background var(--t);
+}
+.back-btn:active { background: var(--rose); }
+.back-btn.hidden { visibility: hidden; pointer-events: none; }
 
-  .time-btn {
-    padding: 0.5rem 1.25rem;
-    border: none;
-    background: transparent;
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    color: var(--rose-dark);
-    letter-spacing: 0.03em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    -webkit-tap-highlight-color: transparent;
-  }
+.header-center { text-align: center; }
+.logo { font-family: var(--font-display); font-size: 1.65rem; font-weight: 600; color: var(--rose-deep); letter-spacing: 0.02em; line-height: 1; }
+.logo span { color: var(--gold); }
+.date-display { font-size: 0.7rem; color: var(--rose-dark); font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
 
-  .time-btn.active.am { background: var(--sky-am); color: #4a7a9b; }
-  .time-btn.active.pm { background: var(--sky-pm); color: #c9a96e; }
+.time-toggle-wrap { display: flex; background: white; border: 1px solid var(--rose); border-radius: 50px; overflow: hidden; height: var(--tap); }
+.time-btn {
+  padding: 0 14px; border: none; background: transparent;
+  font-family: var(--font-body); font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; transition: var(--t); color: var(--rose-dark);
+  display: flex; align-items: center; gap: 5px; min-width: var(--tap); justify-content: center;
+}
+.time-btn.active.am { background: var(--sky-am); color: #4a7a9b; }
+.time-btn.active.pm { background: var(--sky-pm); color: #c9a96e; }
 
-  /* MAIN LAYOUT */
-  .container {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem calc(2rem + var(--safe-bottom));
-  }
+/* OFFLINE */
+.offline-bar { display: none; flex-shrink: 0; background: #854F0B; color: #FAEEDA; text-align: center; font-size: 0.72rem; padding: 5px 1rem; letter-spacing: 0.04em; }
+body.offline .offline-bar { display: block; }
 
-  /* DAY STRIP */
-  .day-strip {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 2rem;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
+/* PULL-TO-REFRESH */
+.ptr-indicator { flex-shrink: 0; display: flex; align-items: center; justify-content: center; height: 0; overflow: hidden; transition: height 0.2s ease; background: var(--cream); }
+.ptr-indicator.pulling, .ptr-indicator.refreshing { height: 48px; }
+.ptr-spinner { width: 22px; height: 22px; border: 2px solid var(--rose); border-top-color: var(--rose-deep); border-radius: 50%; transition: transform 0.1s linear; }
+.ptr-indicator.refreshing .ptr-spinner { animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  .day-strip::-webkit-scrollbar { display: none; }
+/* SCROLL AREA */
+.scroll-area {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px calc(var(--safe-right) + 16px) calc(var(--safe-bottom) + 24px) calc(var(--safe-left) + 16px);
+}
 
-  .day-chip {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 16px;
-    border: 1px solid var(--rose);
-    background: white;
-    cursor: pointer;
-    transition: var(--transition);
-    min-width: 54px;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
+/* DAY STRIP */
+.day-strip { display: flex; gap: 8px; margin-bottom: 18px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.day-strip::-webkit-scrollbar { display: none; }
 
-  .day-chip:hover { border-color: var(--rose-dark); }
+.day-chip {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+  padding: 8px 12px; border-radius: 16px; border: 1px solid var(--rose);
+  background: white; cursor: pointer; transition: var(--t);
+  min-width: var(--tap); min-height: var(--tap); justify-content: center; gap: 2px;
+}
+.day-chip:active { transform: scale(0.94); }
+.day-chip.active { background: var(--rose-deep); border-color: var(--rose-deep); color: white; }
+.day-chip .day-name { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: inherit; opacity: 0.7; }
+.day-chip .day-num { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; line-height: 1; color: inherit; }
+.day-chip .dot-row { display: flex; gap: 3px; margin-top: 4px; }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: var(--rose); }
+.day-chip.active .dot { background: rgba(255,255,255,0.4); }
+.dot.done { background: var(--moss); }
+.day-chip.active .dot.done { background: #a8d8a8; }
 
-  .day-chip.active {
-    background: var(--rose-deep);
-    border-color: var(--rose-deep);
-    color: white;
-  }
+/* PROGRESS */
+.progress-wrap { background: var(--petal); border: 1px solid var(--rose); border-radius: 16px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+.progress-bar-bg { flex: 1; height: 8px; background: var(--rose); border-radius: 50px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--moss); border-radius: 50px; transition: width 0.4s ease; }
+.progress-label { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--moss); min-width: 40px; text-align: right; }
+.progress-text { font-size: 0.72rem; color: var(--rose-dark); min-width: 68px; }
 
-  .day-chip .day-name {
-    font-size: 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: inherit;
-    opacity: 0.7;
-  }
+/* SECTION HEAD */
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; min-height: var(--tap); }
+.section-title { font-family: var(--font-display); font-size: 1.4rem; font-weight: 500; color: var(--rose-deep); }
+.add-btn { display: flex; align-items: center; gap: 6px; padding: 0 16px; height: var(--tap); border: 1px solid var(--rose-dark); border-radius: 50px; background: transparent; font-family: var(--font-body); font-size: 0.82rem; color: var(--rose-dark); cursor: pointer; transition: var(--t); font-weight: 500; }
+.add-btn:active { background: var(--rose); color: var(--rose-deep); transform: scale(0.97); }
 
-  .day-chip .day-num {
-    font-family: var(--font-display);
-    font-size: 1.35rem;
-    font-weight: 600;
-    line-height: 1;
-    margin-top: 2px;
-    color: inherit;
-  }
+/* STEP CARDS */
+.steps-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
 
-  .day-chip .dot-row {
-    display: flex;
-    gap: 3px;
-    margin-top: 5px;
-    height: 6px;
-  }
+.step-card-wrap { position: relative; border-radius: 16px; overflow: hidden; }
 
-  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--rose); }
-  .day-chip.active .dot { background: rgba(255,255,255,0.5); }
-  .dot.done { background: var(--moss); }
-  .day-chip.active .dot.done { background: #a8d8a8; }
+.swipe-delete-bg {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
+  background: #e24b4a; display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 12px; font-weight: 500; border-radius: 0 16px 16px 0;
+  cursor: pointer;
+}
 
-  /* SECTION HEADING */
-  .section-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-  }
+.step-card {
+  background: white; border: 1px solid var(--rose); border-radius: 16px;
+  padding: 0 14px; display: flex; align-items: center; gap: 10px;
+  position: relative; overflow: hidden; min-height: calc(var(--tap) * 1.4);
+  transition: transform var(--t), background var(--t);
+}
+.step-card:active { transform: scale(0.985); }
+.step-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--rose); transition: background var(--t); }
+.step-card.done::before { background: var(--moss); }
+.step-card.done { background: #f7fbf5; border-color: #c8dfc0; }
 
-  .section-title {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--rose-deep);
-  }
+.check-circle {
+  width: var(--tap); height: var(--tap); border-radius: 50%;
+  border: 2px solid var(--rose); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: var(--t); background: white; font-size: 16px; color: transparent;
+}
+.check-circle:active { transform: scale(0.86); }
+.step-card.done .check-circle { background: var(--moss); border-color: var(--moss); color: white; }
 
-  .add-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0.45rem 1rem;
-    border: 1px solid var(--rose-dark);
-    border-radius: 50px;
-    background: transparent;
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    color: var(--rose-dark);
-    cursor: pointer;
-    transition: var(--transition);
-    font-weight: 500;
-    -webkit-tap-highlight-color: transparent;
-  }
+.step-info { flex: 1; min-width: 0; padding: 14px 0; }
+.step-name { font-weight: 500; font-size: 0.95rem; color: var(--bark); }
+.step-card.done .step-name { text-decoration: line-through; color: #999; }
+.step-product { font-size: 0.74rem; color: var(--rose-dark); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .add-btn:hover { background: var(--rose); color: var(--rose-deep); }
+.step-order { font-family: var(--font-display); font-size: 1rem; color: var(--mist); font-weight: 600; min-width: 18px; text-align: right; }
 
-  /* STEP CARDS */
-  .steps-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
+.step-actions { display: flex; gap: 4px; }
+.icon-btn { width: var(--tap); height: var(--tap); border-radius: 12px; border: 1px solid var(--mist); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #aaa; transition: var(--t); flex-shrink: 0; }
+.icon-btn:active { transform: scale(0.88); }
+.icon-btn.del { border-color: #f09595; color: #e24b4a; }
 
-  .step-card {
-    background: white;
-    border: 1px solid var(--rose);
-    border-radius: 16px;
-    padding: 1rem 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
-  }
+/* NOTES */
+.notes-area { background: white; border: 1px solid var(--rose); border-radius: 16px; padding: 14px 16px; }
+.notes-label { font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--rose-dark); margin-bottom: 8px; }
+.notes-input { width: 100%; border: none; outline: none; font-family: var(--font-body); font-size: 0.9rem; color: var(--bark); resize: none; background: transparent; min-height: 64px; }
+.notes-input::placeholder { color: var(--mist); }
 
-  .step-card::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 4px;
-    background: var(--rose);
-    border-radius: 4px 0 0 4px;
-    transition: var(--transition);
-  }
+/* INSTALL BANNERS */
+.install-banner { display: none; background: white; border: 1px solid var(--rose); border-radius: 16px; padding: 12px 14px; margin-bottom: 14px; align-items: center; gap: 10px; }
+.install-banner.show { display: flex; }
+.install-banner-text { flex: 1; font-size: 0.82rem; color: var(--bark); line-height: 1.4; }
+.install-banner-text strong { display: block; margin-bottom: 1px; }
+.install-btn { padding: 0 14px; height: var(--tap); border: none; border-radius: 50px; background: var(--rose-deep); color: white; font-family: var(--font-body); font-size: 0.8rem; font-weight: 500; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.dismiss-btn { width: var(--tap); height: var(--tap); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--mist); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 50%; }
 
-  .step-card.done::before { background: var(--moss); }
-  .step-card.done { background: #f7fbf5; border-color: #c8dfc0; }
+.ios-hint { display: none; background: #1c1c1e; color: white; border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; font-size: 0.82rem; line-height: 1.6; }
+.ios-hint.show { display: block; }
+.ios-hint strong { display: block; margin-bottom: 4px; font-size: 0.88rem; }
 
-  .check-circle {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    border: 2px solid var(--rose);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: var(--transition);
-    background: white;
-    font-size: 14px;
-    color: transparent;
-    -webkit-tap-highlight-color: transparent;
-  }
+/* MODAL — bottom sheet */
+.modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(61,43,31,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--cream); border-radius: 24px 24px 0 0;
+  padding: 8px 20px calc(var(--safe-bottom) + 24px);
+  width: 100%; max-width: 560px;
+  border: 1px solid var(--rose); border-bottom: none;
+  animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 36px; height: 4px; background: var(--mist); border-radius: 2px; margin: 8px auto 18px; }
+.modal-title { font-family: var(--font-display); font-size: 1.5rem; color: var(--rose-deep); margin-bottom: 16px; font-weight: 500; }
+.field-group { margin-bottom: 12px; }
+.field-label { font-size: 0.73rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--rose-dark); margin-bottom: 6px; }
+.field-input, .field-select { width: 100%; padding: 0 14px; height: var(--tap); border: 1px solid var(--rose); border-radius: 12px; font-family: var(--font-body); font-size: 1rem; background: white; color: var(--bark); outline: none; -webkit-appearance: none; appearance: none; }
+.field-input:focus { border-color: var(--rose-dark); }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.btn-cancel { flex: 1; height: var(--tap); border: 1px solid var(--mist); border-radius: 50px; background: transparent; font-family: var(--font-body); font-size: 0.9rem; color: #888; cursor: pointer; }
+.btn-save { flex: 2; height: var(--tap); border: none; border-radius: 50px; background: var(--rose-deep); font-family: var(--font-body); font-size: 0.9rem; color: white; cursor: pointer; font-weight: 500; }
+.btn-save:active { background: var(--rose-dark); transform: scale(0.98); }
 
-  .step-card.done .check-circle { background: var(--moss); border-color: var(--moss); color: white; }
+/* EMPTY */
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--mist); font-size: 0.9rem; }
+.empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; }
 
-  .step-info { flex: 1; min-width: 0; }
-
-  .step-name { font-weight: 500; font-size: 0.95rem; color: var(--bark); }
-  .step-card.done .step-name { text-decoration: line-through; color: #999; }
-
-  .step-product {
-    font-size: 0.78rem;
-    color: var(--rose-dark);
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .step-order { font-family: var(--font-display); font-size: 1.1rem; color: var(--mist); font-weight: 600; min-width: 20px; text-align: right; }
-
-  .step-actions { display: flex; gap: 6px; opacity: 0; transition: var(--transition); }
-  .step-card:hover .step-actions { opacity: 1; }
-  /* Always show on touch devices */
-  @media (hover: none) { .step-actions { opacity: 1; } }
-
-  .icon-btn {
-    width: 28px; height: 28px;
-    border-radius: 8px;
-    border: 1px solid var(--mist);
-    background: transparent;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; color: #999;
-    transition: var(--transition);
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .icon-btn:hover { border-color: var(--rose-dark); color: var(--rose-dark); }
-  .icon-btn.del:hover { border-color: #e24b4a; color: #e24b4a; }
-
-  /* PROGRESS BAR */
-  .progress-wrap {
-    background: var(--petal);
-    border: 1px solid var(--rose);
-    border-radius: 16px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .progress-bar-bg { flex: 1; height: 8px; background: var(--rose); border-radius: 50px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--moss); border-radius: 50px; transition: width 0.4s ease; }
-  .progress-label { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; color: var(--moss); min-width: 44px; text-align: right; }
-  .progress-text { font-size: 0.78rem; color: var(--rose-dark); min-width: 80px; }
-
-  /* INSTALL BANNER */
-  .install-banner {
-    display: none;
-    background: white;
-    border: 1px solid var(--rose);
-    border-radius: 16px;
-    padding: 0.9rem 1.25rem;
-    margin-bottom: 1.5rem;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .install-banner.show { display: flex; }
-  .install-banner-text { flex: 1; font-size: 0.85rem; color: var(--bark); line-height: 1.4; }
-  .install-banner-text strong { display: block; margin-bottom: 2px; }
-  .install-btn {
-    padding: 0.45rem 1rem;
-    border: none;
-    border-radius: 50px;
-    background: var(--rose-deep);
-    color: white;
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .dismiss-btn {
-    background: none; border: none; cursor: pointer;
-    font-size: 16px; color: var(--mist); padding: 4px;
-    flex-shrink: 0;
-  }
-
-  /* iOS install hint */
-  .ios-hint {
-    display: none;
-    background: #1c1c1e;
-    color: white;
-    border-radius: 16px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-    font-size: 0.82rem;
-    line-height: 1.6;
-  }
-
-  .ios-hint.show { display: block; }
-  .ios-hint strong { display: block; margin-bottom: 4px; font-size: 0.9rem; }
-  .ios-hint .share-icon { display: inline-block; width: 18px; height: 18px; vertical-align: middle; }
-
-  /* MODAL */
-  .modal-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(61,43,31,0.45);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-  }
-
-  .modal-backdrop.open { display: flex; }
-
-  .modal {
-    background: var(--cream);
-    border-radius: 20px;
-    padding: 2rem;
-    width: 100%;
-    max-width: 420px;
-    border: 1px solid var(--rose);
-  }
-
-  .modal-title { font-family: var(--font-display); font-size: 1.6rem; color: var(--rose-deep); margin-bottom: 1.25rem; font-weight: 500; }
-
-  .field-group { margin-bottom: 1rem; }
-  .field-label { font-size: 0.78rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--rose-dark); margin-bottom: 6px; }
-
-  .field-input, .field-select {
-    width: 100%;
-    padding: 0.6rem 0.9rem;
-    border: 1px solid var(--rose);
-    border-radius: 10px;
-    font-family: var(--font-body);
-    font-size: 0.9rem;
-    background: white;
-    color: var(--bark);
-    outline: none;
-    transition: var(--transition);
-    -webkit-appearance: none;
-  }
-
-  .field-input:focus { border-color: var(--rose-dark); }
-
-  .modal-actions { display: flex; gap: 10px; margin-top: 1.5rem; justify-content: flex-end; }
-
-  .btn-cancel {
-    padding: 0.55rem 1.25rem;
-    border: 1px solid var(--mist);
-    border-radius: 50px;
-    background: transparent;
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: #888;
-    cursor: pointer;
-  }
-
-  .btn-save {
-    padding: 0.55rem 1.5rem;
-    border: none;
-    border-radius: 50px;
-    background: var(--rose-deep);
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    color: white;
-    cursor: pointer;
-    font-weight: 500;
-    transition: var(--transition);
-  }
-
-  .btn-save:hover { background: var(--rose-dark); }
-
-  /* NOTES */
-  .notes-area { background: white; border: 1px solid var(--rose); border-radius: 16px; padding: 1rem 1.25rem; }
-  .notes-label { font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--rose-dark); margin-bottom: 8px; }
-  .notes-input { width: 100%; border: none; outline: none; font-family: var(--font-body); font-size: 0.9rem; color: var(--bark); resize: none; background: transparent; min-height: 60px; }
-  .notes-input::placeholder { color: var(--mist); }
-
-  /* PM MODE */
-  body.pm-mode .header { background: #1e1630; }
-  body.pm-mode .logo { color: #c9a96e; }
-  body.pm-mode .date-display { color: #a08ab0; }
-  body.pm-mode { background: #16101f; color: #e8dff5; }
-  body.pm-mode .step-card { background: #22183a; border-color: #3d2e5c; }
-  body.pm-mode .step-card.done { background: #1a2a1a; border-color: #2d4a2d; }
-  body.pm-mode .step-name { color: #e8dff5; }
-  body.pm-mode .step-card.done .step-name { color: #666; }
-  body.pm-mode .notes-area { background: #22183a; border-color: #3d2e5c; }
-  body.pm-mode .notes-input { color: #e8dff5; }
-  body.pm-mode .progress-wrap { background: #22183a; border-color: #3d2e5c; }
-  body.pm-mode .check-circle { background: #22183a; border-color: #5a4a7a; }
-  body.pm-mode .day-chip { background: #22183a; border-color: #3d2e5c; color: #e8dff5; }
-  body.pm-mode .add-btn { border-color: #9a7ac0; color: #9a7ac0; }
-  body.pm-mode .section-title { color: #c9a96e; }
-  body.pm-mode .modal { background: #1e1630; }
-  body.pm-mode .field-input, body.pm-mode .field-select { background: #22183a; border-color: #3d2e5c; color: #e8dff5; }
-  body.pm-mode .progress-bar-bg { background: #3d2e5c; }
-  body.pm-mode .icon-btn { border-color: #3d2e5c; color: #9a7ac0; }
-  body.pm-mode .install-banner { background: #22183a; border-color: #3d2e5c; }
-  body.pm-mode .install-banner-text { color: #e8dff5; }
-
-  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--mist); font-size: 0.9rem; }
-  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; }
-
-  /* Offline indicator */
-  .offline-bar {
-    display: none;
-    background: #854F0B;
-    color: #FAEEDA;
-    text-align: center;
-    font-size: 0.78rem;
-    padding: 6px 1rem;
-    letter-spacing: 0.04em;
-  }
-
-  body.offline .offline-bar { display: block; }
-
-  @media (max-width: 600px) {
-    .header { padding: calc(1rem + var(--safe-top)) 1rem 1rem; flex-wrap: wrap; gap: 0.75rem; }
-    .container { padding: 1.5rem 1rem calc(1.5rem + var(--safe-bottom)); }
-    .logo { font-size: 1.6rem; }
-    .time-btn { padding: 0.5rem 0.9rem; }
-  }
+/* PM MODE */
+body.pm-mode { background: #16101f; color: #e8dff5; }
+body.pm-mode .header { background: #1e1630; border-color: #3d2e5c; }
+body.pm-mode .logo { color: #c9a96e; }
+body.pm-mode .date-display { color: #a08ab0; }
+body.pm-mode .back-btn { color: #c9a96e; }
+body.pm-mode .scroll-area { background: #16101f; }
+body.pm-mode .step-card { background: #22183a; border-color: #3d2e5c; }
+body.pm-mode .step-card.done { background: #1a2a1a; border-color: #2d4a2d; }
+body.pm-mode .step-name { color: #e8dff5; }
+body.pm-mode .step-card.done .step-name { color: #666; }
+body.pm-mode .notes-area { background: #22183a; border-color: #3d2e5c; }
+body.pm-mode .notes-input { color: #e8dff5; }
+body.pm-mode .progress-wrap { background: #22183a; border-color: #3d2e5c; }
+body.pm-mode .check-circle { background: #22183a; border-color: #5a4a7a; }
+body.pm-mode .day-chip { background: #22183a; border-color: #3d2e5c; color: #e8dff5; }
+body.pm-mode .add-btn { border-color: #9a7ac0; color: #9a7ac0; }
+body.pm-mode .section-title { color: #c9a96e; }
+body.pm-mode .modal { background: #1e1630; border-color: #3d2e5c; }
+body.pm-mode .field-input, body.pm-mode .field-select { background: #22183a; border-color: #3d2e5c; color: #e8dff5; }
+body.pm-mode .progress-bar-bg { background: #3d2e5c; }
+body.pm-mode .icon-btn { border-color: #3d2e5c; color: #9a7ac0; }
+body.pm-mode .install-banner { background: #22183a; border-color: #3d2e5c; }
+body.pm-mode .install-banner-text { color: #e8dff5; }
+body.pm-mode .ptr-indicator { background: #16101f; }
+body.pm-mode .ptr-spinner { border-color: #3d2e5c; border-top-color: #c9a96e; }
 </style>
 </head>
 <body class="am-mode">
+<div id="app">
 
-<div class="offline-bar">You're offline — GlowLog is running from cache</div>
-
-<header class="header">
-  <div class="logo">Glow<span>Log</span></div>
-  <div class="date-display" id="date-label"></div>
-  <div class="time-toggle-wrap">
-    <button class="time-btn am active" id="btn-am" onclick="setMode('am')">☀ AM</button>
-    <button class="time-btn pm" id="btn-pm" onclick="setMode('pm')">☾ PM</button>
-  </div>
-</header>
-
-<div class="container">
-
-  <!-- Android/Chrome install prompt -->
-  <div class="install-banner" id="install-banner">
-    <div class="install-banner-text">
-      <strong>Add GlowLog to your home screen</strong>
-      Open it like an app — no browser needed
+  <header class="header">
+    <button class="back-btn hidden" id="back-btn" aria-label="Back">‹</button>
+    <div class="header-center">
+      <div class="logo">Glow<span>Log</span></div>
+      <div class="date-display" id="date-label"></div>
     </div>
-    <button class="install-btn" id="install-btn">Install</button>
-    <button class="dismiss-btn" onclick="dismissInstall()">✕</button>
-  </div>
-
-  <!-- iOS Safari hint (shown once) -->
-  <div class="ios-hint" id="ios-hint">
-    <strong>📲 Add to Home Screen</strong>
-    Tap the <strong>Share</strong> button in Safari, then choose <strong>"Add to Home Screen"</strong> to use GlowLog like a native app — offline, full screen, no browser bar.
-    <br><br>
-    <button class="btn-cancel" onclick="dismissIosHint()" style="font-size:0.78rem;padding:0.4rem 0.9rem;">Got it</button>
-  </div>
-
-  <div class="day-strip" id="day-strip"></div>
-
-  <div class="progress-wrap">
-    <div class="progress-text" id="progress-text">0 of 0 done</div>
-    <div class="progress-bar-bg">
-      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    <div class="time-toggle-wrap">
+      <button class="time-btn am active" id="btn-am" onclick="setMode('am')">☀ AM</button>
+      <button class="time-btn pm" id="btn-pm" onclick="setMode('pm')">☾ PM</button>
     </div>
-    <div class="progress-label" id="progress-pct">—</div>
+  </header>
+
+  <div class="offline-bar">You're offline — running from cache</div>
+
+  <div class="ptr-indicator" id="ptr">
+    <div class="ptr-spinner" id="ptr-spinner"></div>
   </div>
 
-  <div class="section-head">
-    <div class="section-title" id="routine-label">Morning Routine</div>
-    <button class="add-btn" onclick="openModal()">+ Add Step</button>
-  </div>
+  <div class="scroll-area" id="scroll-area">
 
-  <div class="steps-list" id="steps-list"></div>
+    <div class="install-banner" id="install-banner">
+      <div class="install-banner-text">
+        <strong>Add GlowLog to your home screen</strong>
+        Open it like an app — no browser bar
+      </div>
+      <button class="install-btn" id="install-btn">Install</button>
+      <button class="dismiss-btn" onclick="dismissInstall()">✕</button>
+    </div>
 
-  <div class="notes-area">
-    <div class="notes-label">Skin Notes</div>
-    <textarea class="notes-input" id="notes-input" placeholder="How is your skin today? Any reactions, breakouts, or notes…" rows="3" oninput="saveNotes()"></textarea>
+    <div class="ios-hint" id="ios-hint">
+      <strong>📲 Add to Home Screen</strong>
+      In Safari tap the <strong>Share</strong> button → <strong>"Add to Home Screen"</strong> for the full app experience.
+      <br><br>
+      <button class="btn-cancel" onclick="dismissIosHint()" style="font-size:0.8rem;height:36px;padding:0 14px;display:inline-flex;align-items:center;">Got it</button>
+    </div>
+
+    <div class="day-strip" id="day-strip"></div>
+
+    <div class="progress-wrap">
+      <div class="progress-text" id="progress-text">0 of 0 done</div>
+      <div class="progress-bar-bg"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-label" id="progress-pct">—</div>
+    </div>
+
+    <div class="section-head">
+      <div class="section-title" id="routine-label">Morning Routine</div>
+      <button class="add-btn" onclick="openModal()">+ Add Step</button>
+    </div>
+
+    <div class="steps-list" id="steps-list"></div>
+
+    <div class="notes-area">
+      <div class="notes-label">Skin Notes</div>
+      <textarea class="notes-input" id="notes-input" placeholder="How is your skin today? Reactions, breakouts, glow…" rows="3" oninput="saveNotes()"></textarea>
+    </div>
+
   </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal-backdrop" id="modal" onclick="closeIfBackdrop(event)">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-title" id="modal-title">Add Step</div>
     <div class="field-group">
       <div class="field-label">Step Name</div>
-      <input class="field-input" id="inp-name" type="text" placeholder="e.g. Vitamin C Serum" />
+      <input class="field-input" id="inp-name" type="text" placeholder="e.g. Vitamin C Serum" autocomplete="off" />
     </div>
     <div class="field-group">
       <div class="field-label">Product (optional)</div>
-      <input class="field-input" id="inp-product" type="text" placeholder="e.g. Skinceuticals C E Ferulic" />
+      <input class="field-input" id="inp-product" type="text" placeholder="e.g. Skinceuticals C E Ferulic" autocomplete="off" />
     </div>
     <div class="field-group">
       <div class="field-label">Apply in</div>
@@ -576,82 +350,155 @@
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" onclick="saveStep()">Save</button>
+      <button class="btn-save" onclick="saveStep()">Save Step</button>
     </div>
   </div>
 </div>
 
 <script>
-const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 let state = JSON.parse(localStorage.getItem('glowlog') || 'null') || {
   mode: 'am', selectedDay: null, steps: [], logs: {}, notes: {}
 };
-
 let editingId = null;
 const today = new Date();
 
-// --- PWA: Service Worker ---
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('GlowLog SW registered:', reg.scope))
-      .catch(err => console.warn('SW registration failed:', err));
-  });
+// SERVICE WORKER
+if ('serviceWorker' in navigator)
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+
+// HAPTICS
+function haptic(type) {
+  if (!navigator.vibrate) return;
+  ({ light: () => navigator.vibrate(8), medium: () => navigator.vibrate(15), success: () => navigator.vibrate([10,50,10]) })[type]?.();
 }
 
-// --- PWA: Offline indicator ---
-function updateOnlineStatus() {
-  document.body.classList.toggle('offline', !navigator.onLine);
-}
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
-updateOnlineStatus();
+// ONLINE STATUS
+function updateOnline() { document.body.classList.toggle('offline', !navigator.onLine); }
+window.addEventListener('online', updateOnline);
+window.addEventListener('offline', updateOnline);
+updateOnline();
 
-// --- PWA: Android/Chrome install prompt ---
+// INSTALL PROMPT
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  if (!localStorage.getItem('glowlog-install-dismissed')) {
+  e.preventDefault(); deferredPrompt = e;
+  if (!localStorage.getItem('glowlog-install-dismissed'))
     document.getElementById('install-banner').classList.add('show');
-  }
 });
-
 document.getElementById('install-btn').addEventListener('click', async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
+  await deferredPrompt.userChoice;
   deferredPrompt = null;
   document.getElementById('install-banner').classList.remove('show');
   localStorage.setItem('glowlog-install-dismissed', '1');
 });
-
 function dismissInstall() {
   document.getElementById('install-banner').classList.remove('show');
   localStorage.setItem('glowlog-install-dismissed', '1');
 }
 
-// --- PWA: iOS Safari hint ---
+// iOS HINT
 const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isInStandaloneMode = window.navigator.standalone === true;
-if (isIos && !isInStandaloneMode && !localStorage.getItem('glowlog-ios-hint-dismissed')) {
+const isStandalone = window.navigator.standalone === true;
+if (isIos && !isStandalone && !localStorage.getItem('glowlog-ios-hint-dismissed'))
   document.getElementById('ios-hint').classList.add('show');
-}
-
 function dismissIosHint() {
   document.getElementById('ios-hint').classList.remove('show');
   localStorage.setItem('glowlog-ios-hint-dismissed', '1');
 }
 
-// --- PWA: handle ?mode= shortcut URLs ---
+// URL SHORTCUT
 const urlMode = new URLSearchParams(location.search).get('mode');
 if (urlMode === 'am' || urlMode === 'pm') state.mode = urlMode;
 
-// --- App logic ---
-function dayKey(d) { return d.toISOString().split('T')[0]; }
+// PULL-TO-REFRESH
+(function() {
+  const area = document.getElementById('scroll-area');
+  const ptr  = document.getElementById('ptr');
+  const spin = document.getElementById('ptr-spinner');
+  let startY = 0, pulling = false, refreshing = false;
+  const THRESH = 64;
 
+  area.addEventListener('touchstart', e => {
+    if (area.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; }
+  }, { passive: true });
+
+  area.addEventListener('touchmove', e => {
+    if (!pulling || refreshing) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0) {
+      spin.style.transform = `rotate(${Math.min(dy / THRESH, 1) * 270}deg)`;
+      ptr.classList.toggle('pulling', dy > 10);
+    }
+  }, { passive: true });
+
+  area.addEventListener('touchend', e => {
+    if (!pulling || refreshing) return;
+    const dy = e.changedTouches[0].clientY - startY;
+    pulling = false;
+    if (dy >= THRESH) {
+      refreshing = true;
+      ptr.classList.remove('pulling');
+      ptr.classList.add('refreshing');
+      haptic('medium');
+      setTimeout(() => {
+        initDays(); renderSteps(); renderNotes();
+        ptr.classList.remove('refreshing');
+        spin.style.transform = '';
+        refreshing = false;
+      }, 800);
+    } else {
+      ptr.classList.remove('pulling');
+      spin.style.transform = '';
+    }
+  }, { passive: true });
+})();
+
+// SWIPE TO DELETE
+function addSwipeToDelete(wrap, id) {
+  const card = wrap.querySelector('.step-card');
+  const bg   = wrap.querySelector('.swipe-delete-bg');
+  let startX = 0, dx = 0, active = false;
+  const THRESH = 70;
+
+  card.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX; active = true; dx = 0;
+    card.style.transition = 'none';
+  }, { passive: true });
+
+  card.addEventListener('touchmove', e => {
+    if (!active) return;
+    dx = Math.max(e.touches[0].clientX - startX, -THRESH - 10);
+    if (dx < 0) card.style.transform = `translateX(${dx}px)`;
+  }, { passive: true });
+
+  card.addEventListener('touchend', () => {
+    active = false;
+    card.style.transition = 'transform 0.25s ease';
+    if (dx < -THRESH * 0.75) {
+      card.style.transform = `translateX(-${THRESH}px)`;
+    } else {
+      card.style.transform = '';
+    }
+  });
+
+  bg.addEventListener('click', () => { haptic('medium'); deleteStep(id); });
+}
+
+// HELPERS
+function dayKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function save() { localStorage.setItem('glowlog', JSON.stringify(state)); }
+
+// DAYS
 function initDays() {
   const strip = document.getElementById('day-strip');
   strip.innerHTML = '';
@@ -661,6 +508,7 @@ function initDays() {
     const k = dayKey(d);
     const chip = document.createElement('div');
     chip.className = 'day-chip' + (k === (state.selectedDay || dayKey(today)) ? ' active' : '');
+    chip.setAttribute('role', 'button');
     const amDone = Object.values(state.logs[k]?.am || {}).filter(Boolean).length;
     const pmDone = Object.values(state.logs[k]?.pm || {}).filter(Boolean).length;
     chip.innerHTML = `
@@ -670,19 +518,21 @@ function initDays() {
         <div class="dot${amDone > 0 ? ' done' : ''}"></div>
         <div class="dot${pmDone > 0 ? ' done' : ''}"></div>
       </div>`;
-    chip.onclick = () => selectDay(k);
+    chip.onclick = () => { haptic('light'); selectDay(k); };
     strip.appendChild(chip);
   }
 }
 
 function selectDay(k) {
   state.selectedDay = k;
-  const d = new Date(k + 'T12:00:00');
+  const [yr, mo, dy] = k.split('-').map(Number);
+  const d = new Date(yr, mo - 1, dy);
   document.getElementById('date-label').textContent = `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
   save(); initDays(); renderSteps(); renderNotes();
 }
 
 function setMode(m) {
+  haptic('light');
   state.mode = m; save();
   document.body.className = m + '-mode';
   if (!navigator.onLine) document.body.classList.add('offline');
@@ -702,43 +552,54 @@ function getLog() {
 }
 
 function renderSteps() {
-  const list = document.getElementById('steps-list');
+  const list  = document.getElementById('steps-list');
   const steps = getCurrentSteps();
-  const log = getLog();
+  const log   = getLog();
   list.innerHTML = '';
 
-  if (steps.length === 0) {
-    list.innerHTML = `<div class="empty-state"><span class="empty-icon">🌸</span>No steps yet — add your first routine step!</div>`;
+  if (!steps.length) {
+    list.innerHTML = `<div class="empty-state"><span class="empty-icon">🌸</span>No steps yet — tap "+ Add Step" to build your routine!</div>`;
     updateProgress(0, 0); return;
   }
 
   steps.forEach((s, i) => {
     const done = !!log[s.id];
-    const card = document.createElement('div');
-    card.className = 'step-card' + (done ? ' done' : '');
-    card.innerHTML = `
-      <span class="step-order">${String(i+1).padStart(2,'0')}</span>
-      <div class="check-circle" onclick="toggleStep('${s.id}')">${done ? '✓' : ''}</div>
-      <div class="step-info">
-        <div class="step-name">${s.name}</div>
-        ${s.product ? `<div class="step-product">${s.product}</div>` : ''}
-      </div>
-      <div class="step-actions">
-        <button class="icon-btn" onclick="editStep('${s.id}')">✎</button>
-        <button class="icon-btn del" onclick="deleteStep('${s.id}')">✕</button>
+    const wrap = document.createElement('div');
+    wrap.className = 'step-card-wrap';
+    wrap.innerHTML = `
+      <div class="swipe-delete-bg">Delete</div>
+      <div class="step-card${done ? ' done' : ''}">
+        <span class="step-order">${String(i+1).padStart(2,'0')}</span>
+        <div class="check-circle">${done ? '✓' : ''}</div>
+        <div class="step-info">
+          <div class="step-name">${s.name}</div>
+          ${s.product ? `<div class="step-product">${s.product}</div>` : ''}
+        </div>
+        <div class="step-actions">
+          <button class="icon-btn" aria-label="Edit">✎</button>
+          <button class="icon-btn del" aria-label="Delete">✕</button>
+        </div>
       </div>`;
-    list.appendChild(card);
+
+    wrap.querySelector('.check-circle').addEventListener('click', () => {
+      haptic(done ? 'light' : 'success'); toggleStep(s.id);
+    });
+    const [editBtn, delBtn] = wrap.querySelectorAll('.icon-btn');
+    editBtn.addEventListener('click', () => { haptic('light'); editStep(s.id); });
+    delBtn.addEventListener('click',  () => { haptic('medium'); deleteStep(s.id); });
+
+    addSwipeToDelete(wrap, s.id);
+    list.appendChild(wrap);
   });
 
-  const doneCount = steps.filter(s => !!log[s.id]).length;
-  updateProgress(doneCount, steps.length);
+  updateProgress(steps.filter(s => !!log[s.id]).length, steps.length);
 }
 
 function updateProgress(done, total) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('progress-pct').textContent = total > 0 ? pct + '%' : '—';
-  document.getElementById('progress-text').textContent = `${done} of ${total} done`;
+  document.getElementById('progress-pct').textContent  = total > 0 ? pct + '%' : '—';
+  document.getElementById('progress-text').textContent  = `${done} of ${total} done`;
 }
 
 function toggleStep(id) {
@@ -749,39 +610,31 @@ function toggleStep(id) {
 function openModal(id = null) {
   editingId = id;
   const s = id ? state.steps.find(x => x.id === id) : null;
-  document.getElementById('modal-title').textContent = id ? 'Edit Step' : 'Add Step';
-  document.getElementById('inp-name').value = s?.name || '';
+  document.getElementById('modal-title').textContent  = id ? 'Edit Step' : 'Add Step';
+  document.getElementById('inp-name').value    = s?.name || '';
   document.getElementById('inp-product').value = s?.product || '';
-  document.getElementById('inp-time').value = s?.time || state.mode;
-  if (!id) document.getElementById('inp-time').value = state.mode;
+  document.getElementById('inp-time').value    = s?.time || state.mode;
   document.getElementById('modal').classList.add('open');
-  setTimeout(() => document.getElementById('inp-name').focus(), 50);
+  setTimeout(() => document.getElementById('inp-name').focus(), 300);
 }
 
-function editStep(id) { openModal(id); }
-
-function deleteStep(id) {
-  if (confirm('Remove this step?')) {
-    state.steps = state.steps.filter(s => s.id !== id);
-    save(); renderSteps(); initDays();
-  }
-}
-
-function closeModal() { document.getElementById('modal').classList.remove('open'); editingId = null; }
+function editStep(id)   { openModal(id); }
+function deleteStep(id) { state.steps = state.steps.filter(s => s.id !== id); save(); renderSteps(); initDays(); }
+function closeModal()   { document.getElementById('modal').classList.remove('open'); editingId = null; }
 function closeIfBackdrop(e) { if (e.target.id === 'modal') closeModal(); }
 
 function saveStep() {
   const name = document.getElementById('inp-name').value.trim();
   if (!name) { document.getElementById('inp-name').focus(); return; }
   const product = document.getElementById('inp-product').value.trim();
-  const time = document.getElementById('inp-time').value;
+  const time    = document.getElementById('inp-time').value;
   if (editingId) {
     const s = state.steps.find(x => x.id === editingId);
     s.name = name; s.product = product; s.time = time;
   } else {
     state.steps.push({ id: Date.now().toString(), name, product, time });
   }
-  save(); closeModal(); renderSteps();
+  haptic('success'); save(); closeModal(); renderSteps();
 }
 
 function saveNotes() {
@@ -796,18 +649,18 @@ function renderNotes() {
   document.getElementById('notes-input').value = state.notes[d]?.[state.mode] || '';
 }
 
-function save() { localStorage.setItem('glowlog', JSON.stringify(state)); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 function init() {
   if (!state.selectedDay) state.selectedDay = dayKey(today);
-  const d = new Date(state.selectedDay + 'T12:00:00');
+  const [yr, mo, dy] = state.selectedDay.split('-').map(Number);
+  const d = new Date(yr, mo - 1, dy);
   document.getElementById('date-label').textContent = `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
   setMode(state.mode);
   initDays();
   renderNotes();
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 init();
 </script>
 </body>
